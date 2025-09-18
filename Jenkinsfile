@@ -1,36 +1,51 @@
-    pipeline {
-        agent any 
+pipeline {
+    agent any
 
-        stages {
-            stage('Checkout Code') {
-                steps {
-                    git 'https://github.com/vishnupriya0310/weather-app.git' 
-                }
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/vishnupriya0310/weather-app.git'
             }
-            stage('Build Docker Image') {
-                steps {
-                    script {
-                        sh 'docker build -t weather-app:latest .'
-                    }
-                }
-            }
-            stage('Push Docker Image (Optional)') {
-                steps {
-                    script {
-                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'Priya_717', usernameVariable: 'vishnupriya310')]) {
-                            sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
-                            sh 'docker push weather-app:latest'
-                        }
-                    }
-                }
-            }
-            stage('Deploy Application') {
-                steps {
-                    // Example for deploying to a remote server via SSH
-                    sshPublisher(publishers: [sshPublisherDesc(configName: 'YourRemoteServer', transfers: [sshTransfer(execCommand: 'docker stop weather-app || true && docker rm weather-app || true && docker run -d --name weather-app -p 80:80 weather-app:latest')], sourceFiles: '')])
-                    // Or, for Kubernetes:
-                    // sh 'kubectl apply -f kubernetes/deployment.yaml' 
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh 'docker build -t weather-app:latest .'
                 }
             }
         }
+
+        stage('Push Docker Image (Optional)') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'Priya_717', usernameVariable: 'vishnupriya310')]) {
+                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+                        sh 'docker push weather-app:latest'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                sshPublisher(publishers: [
+                    sshPublisherDesc(
+                        configName: 'YourRemoteServer',
+                        transfers: [
+                            sshTransfer(
+                                execCommand: '''
+                                    docker stop weather-app || true &&
+                                    docker rm weather-app || true &&
+                                    docker run -d --name weather-app -p 80:80 weather-app:latest
+                                '''
+                            )
+                        ],
+                        sourceFiles: ''
+                    )
+                ])
+            }
+        }
     }
+}
