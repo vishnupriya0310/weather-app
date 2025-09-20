@@ -36,7 +36,7 @@ pipeline {
                                 execCommand: '''
                                     docker stop weather-app || true &&
                                     docker rm weather-app || true &&
-                                    docker run -d --name weather-app -p 80:80 weather-app:latest
+                                    docker run -d --name weather-app -p 5000:5000 weather-app:latest
                                 '''
                             )
                         ],
